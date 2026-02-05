@@ -136,6 +136,27 @@ async function fetchQuotesFromServer() {
   }
 }
 
+async function sendQuotesToServer(quotesToSend) {
+  try {
+    const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        quotes: quotesToSend,
+        syncedAt: new Date().toISOString()
+      })
+    });
+
+    const result = await response.json();
+    console.log("Quotes successfully sent to server:", result);
+  } catch (error) {
+    console.error("Failed to send quotes to server:", error);
+  }
+}
+
+
 
 function isSameQuote(localQuote, serverQuote) {
   return localQuote.text === serverQuote.text;
@@ -151,11 +172,9 @@ async function syncWithServer() {
     );
 
     if (localIndex === -1) {
-      // New quote from server
       quotes.push(serverQuote);
       updated = true;
     } else {
-      // Conflict → server wins
       quotes[localIndex] = serverQuote;
       updated = true;
     }
@@ -166,8 +185,29 @@ async function syncWithServer() {
     populateCategories();
     filterQuotes();
     notifySyncUpdate();
+
+    // 🔥 POST local state back to server (simulation)
+    sendQuotesToServer(quotes);
   }
 }
+
+function addQuote() {
+  const text = newQuoteText.value.trim();
+  const category = newQuoteCategory.value.trim();
+
+  if (!text || !category) return;
+
+  const newQuote = { text, category };
+  quotes.push(newQuote);
+  saveQuotes();
+
+  populateCategories();
+  filterQuotes();
+
+  // POST new quote immediately
+  sendQuotesToServer([newQuote]);
+}
+
 
 
 setInterval(syncWithServer, SYNC_INTERVAL);
