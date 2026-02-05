@@ -112,3 +112,84 @@ document.addEventListener("DOMContentLoaded", () => {
   populateCategories();
   filterQuotes();
 });
+
+
+// SERVER SYNC
+const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
+const SYNC_INTERVAL = 15000; // 15 seconds
+
+async function fetchServerQuotes() {
+  try {
+    const response = await fetch(SERVER_URL);
+    const data = await response.json();
+
+    // Convert server posts to quote format
+    return data.slice(0, 10).map(post => ({
+      text: post.title,
+      category: `Server-Category-${post.userId}`,
+      source: "server",
+      updatedAt: Date.now()
+    }));
+  } catch (error) {
+    console.error("Failed to fetch server quotes:", error);
+    return [];
+  }
+}
+
+function isSameQuote(localQuote, serverQuote) {
+  return localQuote.text === serverQuote.text;
+}
+
+async function syncWithServer() {
+  const serverQuotes = await fetchServerQuotes();
+  let conflictsResolved = false;
+
+  serverQuotes.forEach(serverQuote => {
+    const localIndex = quotes.findIndex(localQuote =>
+      isSameQuote(localQuote, serverQuote)
+    );
+
+    if (localIndex === -1) {
+      // New quote from server
+      quotes.push(serverQuote);
+      conflictsResolved = true;
+    } else {
+      // Conflict → server wins
+      quotes[localIndex] = serverQuote;
+      conflictsResolved = true;
+    }
+  });
+
+  if (conflictsResolved) {
+    saveQuotes();
+    populateCategories();
+    filterQuotes();
+    notifySyncUpdate();
+  }
+}
+
+setInterval(syncWithServer, SYNC_INTERVAL);
+
+function notifySyncUpdate() {
+  const notice = document.getElementById("syncNotice");
+  notice.textContent = "Quotes updated from server. Conflicts resolved automatically.";
+  notice.style.display = "block";
+
+  setTimeout(() => {
+    notice.style.display = "none";
+  }, 4000);
+}
+
+function manualSync() {
+  if (confirm("Sync with server? Server data will override local conflicts.")) {
+    syncWithServer();
+  }
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  loadQuotes();
+  createAddQuoteForm();
+  populateCategories();
+  filterQuotes();
+  await syncWithServer();
+});

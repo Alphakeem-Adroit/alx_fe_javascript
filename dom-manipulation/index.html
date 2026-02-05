@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="style.css">
   </head>
   <body>
+    <div id="syncNotice" style="display:none; color: green; margin-bottom: 10px;"></div>
+
     <h1>Dynamic Quote Generator</h1>
     <div id="quoteDisplay"></div>
     <button id="newQuote">Show New Quote</button>
@@ -19,6 +21,8 @@
     <button onclick="exportQuotes()">Export Quotes (JSON)</button>
     <input type="file" id="importFile" accept=".json" onchange="importFromJsonFile(event)" />
 
+
+    <button onclick="manualSync()">Manual Sync</button>
 
     <script src="script.js"></script>
   </body>
