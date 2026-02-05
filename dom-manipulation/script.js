@@ -118,12 +118,12 @@ document.addEventListener("DOMContentLoaded", () => {
 const SERVER_URL = "https://jsonplaceholder.typicode.com/posts";
 const SYNC_INTERVAL = 15000; // 15 seconds
 
-async function fetchServerQuotes() {
+async function fetchQuotesFromServer() {
   try {
     const response = await fetch(SERVER_URL);
     const data = await response.json();
 
-    // Convert server posts to quote format
+    // Normalize server data into quote format
     return data.slice(0, 10).map(post => ({
       text: post.title,
       category: `Server-Category-${post.userId}`,
@@ -131,36 +131,37 @@ async function fetchServerQuotes() {
       updatedAt: Date.now()
     }));
   } catch (error) {
-    console.error("Failed to fetch server quotes:", error);
+    console.error("Error fetching quotes from server:", error);
     return [];
   }
 }
+
 
 function isSameQuote(localQuote, serverQuote) {
   return localQuote.text === serverQuote.text;
 }
 
 async function syncWithServer() {
-  const serverQuotes = await fetchServerQuotes();
-  let conflictsResolved = false;
+  const serverQuotes = await fetchQuotesFromServer();
+  let updated = false;
 
   serverQuotes.forEach(serverQuote => {
-    const localIndex = quotes.findIndex(localQuote =>
-      isSameQuote(localQuote, serverQuote)
+    const localIndex = quotes.findIndex(
+      localQuote => localQuote.text === serverQuote.text
     );
 
     if (localIndex === -1) {
       // New quote from server
       quotes.push(serverQuote);
-      conflictsResolved = true;
+      updated = true;
     } else {
       // Conflict → server wins
       quotes[localIndex] = serverQuote;
-      conflictsResolved = true;
+      updated = true;
     }
   });
 
-  if (conflictsResolved) {
+  if (updated) {
     saveQuotes();
     populateCategories();
     filterQuotes();
@@ -168,7 +169,9 @@ async function syncWithServer() {
   }
 }
 
+
 setInterval(syncWithServer, SYNC_INTERVAL);
+
 
 function notifySyncUpdate() {
   const notice = document.getElementById("syncNotice");
