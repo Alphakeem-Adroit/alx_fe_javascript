@@ -156,6 +156,38 @@ async function sendQuotesToServer(quotesToSend) {
   }
 }
 
+async function syncQuotes() {
+  const serverQuotes = await fetchQuotesFromServer();
+  let updated = false;
+
+  serverQuotes.forEach(serverQuote => {
+    const localIndex = quotes.findIndex(
+      localQuote => localQuote.text === serverQuote.text
+    );
+
+    if (localIndex === -1) {
+      // New quote from server
+      quotes.push(serverQuote);
+      updated = true;
+    } else {
+      // Conflict detected → server wins
+      quotes[localIndex] = serverQuote;
+      updated = true;
+    }
+  });
+
+  if (updated) {
+    saveQuotes();
+    populateCategories();
+    filterQuotes();
+    notifySyncUpdate();
+
+    // Send merged data back to server (POST)
+    sendQuotesToServer(quotes);
+  }
+}
+
+setInterval(syncQuotes, SYNC_INTERVAL);
 
 
 function isSameQuote(localQuote, serverQuote) {
