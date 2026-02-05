@@ -245,14 +245,34 @@ function addQuote() {
 setInterval(syncWithServer, SYNC_INTERVAL);
 
 
+// function notifySyncUpdate() {
+//   const notice = document.getElementById("syncNotice");
+//   notice.textContent = "Quotes updated from server. Conflicts resolved automatically.";
+//   notice.style.display = "block";
+
+//   setTimeout(() => {
+//     notice.style.display = "none";
+//   }, 4000);
+// }
+
 function notifySyncUpdate() {
   const notice = document.getElementById("syncNotice");
-  notice.textContent = "Quotes updated from server. Conflicts resolved automatically.";
+
+  notice.textContent = "Quotes synced with server!";
   notice.style.display = "block";
 
   setTimeout(() => {
     notice.style.display = "none";
   }, 4000);
+}
+
+if (updated) {
+  saveQuotes();
+  populateCategories();
+  filterQuotes();
+
+  notifySyncUpdate();
+  sendQuotesToServer(quotes);
 }
 
 function manualSync() {
