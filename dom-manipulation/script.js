@@ -1,24 +1,52 @@
-let quotes = [];
+function populateCategories() {
+  const categoryFilter = document.getElementById("categoryFilter");
 
-/* Save quotes to localStorage */
-function saveQuotes() {
-  localStorage.setItem("quotes", JSON.stringify(quotes));
+  // Reset dropdown
+  categoryFilter.innerHTML = `<option value="all">All Categories</option>`;
+
+  const categories = [...new Set(quotes.map(q => q.category))];
+
+  categories.forEach(category => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    categoryFilter.appendChild(option);
+  });
+
+  // Restore last selected filter
+  const savedCategory = localStorage.getItem("selectedCategory");
+  if (savedCategory) {
+    categoryFilter.value = savedCategory;
+  }
 }
 
-/* Load quotes from localStorage */
-function loadQuotes() {
-  const storedQuotes = localStorage.getItem("quotes");
-  if (storedQuotes) {
-    quotes = JSON.parse(storedQuotes);
-  } else {
-    // Default quotes (first-time users)
-    quotes = [
-      { text: "The best way to predict the future is to create it.", category: "Motivation" },
-      { text: "JavaScript is the language of the web.", category: "Programming" },
-      { text: "Simplicity is the soul of efficiency.", category: "Wisdom" }
-    ];
-    saveQuotes();
+function filterQuotes() {
+  const selectedCategory = document.getElementById("categoryFilter").value;
+
+  // Save preference
+  localStorage.setItem("selectedCategory", selectedCategory);
+
+  let filteredQuotes =
+    selectedCategory === "all"
+      ? quotes
+      : quotes.filter(q => q.category === selectedCategory);
+
+  displayQuotes(filteredQuotes);
+}
+
+function displayQuotes(quotesToDisplay) {
+  quoteDisplay.innerHTML = "";
+
+  if (quotesToDisplay.length === 0) {
+    quoteDisplay.textContent = "No quotes available for this category.";
+    return;
   }
+
+  quotesToDisplay.forEach(quote => {
+    const p = document.createElement("p");
+    p.innerHTML = `"${quote.text}" <span class="category">— ${quote.category}</span>`;
+    quoteDisplay.appendChild(p);
+  });
 }
 
 function addQuote() {
@@ -36,83 +64,16 @@ function addQuote() {
   quotes.push({ text, category });
   saveQuotes();
 
+  populateCategories();
+  filterQuotes();
+
   textInput.value = "";
   categoryInput.value = "";
-
-  alert("Quote added successfully!");
-}
-
-function showRandomQuote() {
-  const randomIndex = Math.floor(Math.random() * quotes.length);
-  const quote = quotes[randomIndex];
-
-  quoteDisplay.innerHTML = "";
-
-  const quoteText = document.createElement("p");
-  quoteText.textContent = `"${quote.text}"`;
-
-  const quoteCategory = document.createElement("span");
-  quoteCategory.textContent = `— ${quote.category}`;
-  quoteCategory.classList.add("category");
-
-  quoteDisplay.appendChild(quoteText);
-  quoteDisplay.appendChild(quoteCategory);
-
-  // Save last viewed quote (session only)
-  sessionStorage.setItem("lastQuote", JSON.stringify(quote));
-}
-
-function loadLastSessionQuote() {
-  const lastQuote = sessionStorage.getItem("lastQuote");
-  if (lastQuote) {
-    const quote = JSON.parse(lastQuote);
-    quoteDisplay.innerHTML = `"${quote.text}" — ${quote.category}`;
-  }
-}
-
-function exportQuotes() {
-  const jsonData = JSON.stringify(quotes, null, 2);
-  const blob = new Blob([jsonData], { type: "application/json" });
-
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "quotes.json";
-  a.click();
-
-  URL.revokeObjectURL(url);
-}
-
-function importFromJsonFile(event) {
-  const fileReader = new FileReader();
-
-  fileReader.onload = function (e) {
-    try {
-      const importedQuotes = JSON.parse(e.target.result);
-
-      if (!Array.isArray(importedQuotes)) {
-        throw new Error("Invalid JSON format");
-      }
-
-      importedQuotes.forEach(q => {
-        if (q.text && q.category) {
-          quotes.push(q);
-        }
-      });
-
-      saveQuotes();
-      alert("Quotes imported successfully!");
-    } catch (error) {
-      alert("Failed to import quotes. Invalid file.");
-    }
-  };
-
-  fileReader.readAsText(event.target.files[0]);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   loadQuotes();
   createAddQuoteForm();
-  loadLastSessionQuote();
+  populateCategories();
+  filterQuotes();
 });
